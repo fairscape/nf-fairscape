@@ -56,18 +56,4 @@ class FairscapeRendererTest extends Specification {
         'this one is long enough' | 'this one is long enough'
     }
 
-    def 'should extract fairscape metadata from the ext directive' () {
-        expect:
-        FairscapeRenderer.fairscapeExt(ext) == expected
-
-        where:
-        ext                                      | expected
-        null                                     | [:]
-        'not a map'                              | [:]
-        [args: '--verbose']                      | [:]
-        [fairscape: 'not a map']                 | [:]
-        [fairscape: [softwareName: 'tac']]       | [softwareName: 'tac']
-        [fairscape: [softwareName: 'tac', softwareVersion: '8.32']] | [softwareName: 'tac', softwareVersion: '8.32']
-    }
-
 }

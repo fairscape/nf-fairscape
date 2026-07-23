@@ -4,6 +4,13 @@ params.n = 8
 process MAKE_LIST {
     publishDir 'results', mode: 'copy'
 
+    ext fairscape: [
+        softwareName       : 'head',
+        softwareVersion    : '8.32',
+        softwareDescription: 'GNU coreutils head — here it takes the first n lines of a bash-generated a-to-z sequence to build the letter list.',
+        softwareUrl        : 'https://www.gnu.org/software/coreutils/head'
+    ]
+
     input:
     val n
 
@@ -20,6 +27,13 @@ process MAKE_LIST {
 process REVERSE {
     publishDir 'results', mode: 'copy'
 
+    ext fairscape: [
+        softwareName       : 'tac',
+        softwareVersion    : '8.32',
+        softwareDescription: 'GNU coreutils tac — a command-line utility that reverses the order of lines in a text file.',
+        softwareUrl        : 'https://www.gnu.org/software/coreutils/tac'
+    ]
+
     input:
     path letters
 
@@ -35,6 +49,13 @@ process REVERSE {
 // step 3: divide the reversed list into two halves
 process SPLIT_HALVES {
     publishDir 'results', mode: 'copy'
+
+    ext fairscape: [
+        softwareName       : 'GNU coreutils (wc, head, tail)',
+        softwareVersion    : '8.32',
+        softwareDescription: 'GNU coreutils text utilities — wc counts the lines, then head and tail split the reversed list into a first and second half.',
+        softwareUrl        : 'https://www.gnu.org/software/coreutils/'
+    ]
 
     input:
     path reversed

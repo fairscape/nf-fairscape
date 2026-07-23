@@ -20,6 +20,17 @@ The crate contains one run-level Computation, one `REVERSE` task Computation, th
 `list.txt` input Dataset, and the published `reversed.txt` Dataset with a
 `generatedBy` edge back to the task.
 
+The `REVERSE` process carries an `ext fairscape: [...]` annotation describing the
+actual tool it runs, so the Software entity in the crate is `tac` (GNU coreutils
+8.32, with author, description, and URL) instead of the process-derived default.
+See `docs/FAIRSCAPE.md` for the full list of `software*` keys.
+
+Build the provenance graph for the published output (JSON + interactive HTML):
+
+```bash
+fairscape-cli build evidence-graph results <ark of reversed.txt from the crate>
+```
+
 Optionally validate against the `fairscape_models` schema:
 
 ```bash

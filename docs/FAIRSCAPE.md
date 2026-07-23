@@ -15,13 +15,53 @@ FAIRSCAPE default context: [schema.org](https://schema.org/) as `@vocab`, plus t
 | Task Computations | `["prov:Activity", "EVI#Computation"]` | One per successful task: `command` = task script, `usedSoftware` = its process Software, `usedDataset` = task input files, `generated` = task output files, `isPartOf` → run Computation. Extra keys: `containerImage`, `identifier` (task hash) |
 | Workflow Software | `["prov:Entity", "EVI#Software"]` | The main workflow script (`contentUrl` = repository or normalized path); referenced only by the run Computation |
 | Nextflow Software | `["prov:Entity", "EVI#Software"]` | The engine itself, versioned; referenced only by the run Computation |
-| Process Software | `["prov:Entity", "EVI#Software"]` | One per process (e.g. `REVERSE`): `description` = the process body source as written in the workflow (unresolved variables — the template; the resolved command lives on each Computation), `contentUrl` = the script/module file defining it, `isPartOf` → workflow Software. Each task Computation's `usedSoftware` points here |
+| Process Software | `["prov:Entity", "EVI#Software"]` | One per process (e.g. `REVERSE`): `description` = the process body source as written in the workflow (unresolved variables — the template; the resolved command lives on each Computation), `contentUrl` = the script/module file defining it, `isPartOf` → workflow Software. Each task Computation's `usedSoftware` points here. All fields can be overridden per process via `ext fairscape: [...]` (see below) |
 | Datasets | `["prov:Entity", "EVI#Dataset"]` | One per unique file (workflow inputs, task outputs, published files): `format` = MIME type or extension, `generatedBy` → producing Computation (inverse of `generated`), `contentUrl` = crate-relative path for published files, normalized path/URL otherwise, `contentSize` in bytes |
 
 Dataflow between steps emerges from shared Dataset identifiers: a task consuming another
 task's output references the same `EVI:Dataset` ARK. Prospective-workflow entities
 (WRROC's `FormalParameter`, `HowToStep`, `ControlAction`, …) have no EVI equivalent and
 are intentionally not modeled.
+
+## Describing the tool a process runs
+
+By default the process Software entity only reflects the Nextflow process (name, body
+source, script path) — Nextflow itself knows nothing about the underlying tool. To record
+the actual software, annotate the process with Nextflow's
+[`ext` directive](https://www.nextflow.io/docs/latest/reference/process.html#ext) (custom
+process directives are not allowed, so `ext` is the supported namespace for user metadata):
+
+```nextflow
+process REVERSE {
+    ext fairscape: [
+        softwareName       : 'tac',
+        softwareVersion    : '8.32',
+        softwareAuthor     : 'Jay Lepreau, David MacKenzie (GNU coreutils)',
+        softwareDescription: 'A command-line utility that reverses the order of lines in a text file.',
+        softwareUrl        : 'https://www.gnu.org/software/coreutils/tac',
+        softwareFormat     : 'application/x-executable'
+    ]
+    ...
+}
+```
+
+Every key is optional and overrides one field of that process's Software entity:
+`softwareName` → `name`, `softwareVersion` → `version`, `softwareAuthor` → `author`,
+`softwareDescription` → `description`, `softwareUrl` → `contentUrl` (URL or local path),
+`softwareFormat` → `format`. Missing keys keep the process-derived defaults. The process
+name itself is still preserved on every task Computation (`description` and
+`usedSoftware` link), so nothing is lost by renaming the Software entity to the tool.
+
+The same values can be supplied from `nextflow.config` without editing the workflow —
+useful for annotating third-party pipelines:
+
+```groovy
+process {
+    withName: 'REVERSE' {
+        ext.fairscape = [ softwareName: 'tac', softwareVersion: '8.32' ]
+    }
+}
+```
 
 ## ARK minting
 

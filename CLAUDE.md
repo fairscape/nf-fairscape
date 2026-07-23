@@ -50,6 +50,18 @@ Groovy/Nextflow — explain changes in Python-adjacent terms and point to files.
   `fairscape_models/tests/test_rocrates/LakeDB/ro-crate-metadata.json`).
   `prov:used`/`prov:wasAssociatedWith` mirrors intentionally OMITTED (pydantic
   derives them; fixture validates without).
+- Per-process tool override (2026-07-23): `ext fairscape: [softwareName,
+  softwareVersion, softwareAuthor, softwareDescription, softwareUrl,
+  softwareFormat]` — each key optional, replaces the matching process-Software
+  field (softwareName = the tool BECOMES the entity name; process name survives
+  on task Computations). Read via `processor.config.get('ext')` →
+  `fairscapeExt()` static helper (unit-tested). Also settable from config:
+  `process { withName:'X' { ext.fairscape = [...] } }` (verified). Custom BARE
+  directives are impossible — Nextflow whitelists directive names
+  (ProcessBuilder.checkName → IllegalDirectiveException) and `foo: 'bar'` in a
+  process body is a Groovy labeled statement, silently ignored. `ext` is the
+  sanctioned escape hatch. Documented in docs/FAIRSCAPE.md; demoed in both
+  examples (letters-chain annotates only REVERSE → mixed default/override).
 - Required-field floors: description ≥10 chars (`ensureDescription`), keywords
   non-empty, datePublished/format/author always set, `contentSize` must be a
   STRING (pydantic rejects int — was a real bug).

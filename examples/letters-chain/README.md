@@ -31,6 +31,18 @@ Note that the input number itself is a scalar (`val`) input, so it does not appe
 as a Dataset — it shows up in the run Computation's `parameter` list (`n: 8`) and
 in the `MAKE_LIST` command (`head -n 8`).
 
+Every step carries an `ext fairscape: [...]` tool annotation, so each Software
+entity names the GNU coreutils tool it runs (`head`, `tac`, and `wc`/`head`/`tail`)
+with its version and homepage instead of the process-derived default. The
+annotation is optional per process, so any of these could be dropped to fall back
+to the workflow-derived Software.
+
+`results/provenance-graph.{json,html}` were built with:
+
+```bash
+fairscape-cli build evidence-graph results <ark of second_half.txt from the crate>
+```
+
 Print the chain from the crate:
 
 ```bash

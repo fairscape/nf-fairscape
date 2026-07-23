@@ -163,18 +163,13 @@ class FairscapeRenderer implements Renderer {
         ]
 
         // -- one software entity per process; each task points at its own process,
-        //    only the run-level computation references the whole workflow script.
-        //    A process may describe the actual tool it runs via the `ext` directive:
-        //    `ext fairscape: [softwareName: 'tac', softwareVersion: '8.32', ...]` —
-        //    those values then replace the process-derived defaults below.
+        //    only the run-level computation references the whole workflow script
         final processArks = [:] as Map<TaskProcessor,String>
         final processSoftware = tasks.collect { task -> task.processor }.unique(false).collect { processor ->
             final scriptPath = ScriptMeta.get(processor.getOwnerScript())?.getScriptPath()
             final scriptUrl = normalizePath(scriptPath ?: metadata.scriptFile)
             final ark = mintArk(naan, 'software', processor.name, scriptUrl + '#' + processor.name)
             processArks[processor] = ark
-
-            final userMeta = fairscapeExt(processor.config.get('ext'))
 
             // the unresolved source of the process body, as written in the workflow,
             // minus the surrounding quote delimiters
@@ -185,13 +180,13 @@ class FairscapeRenderer implements Renderer {
             return withoutNulls([
                 '@id'        : ark,
                 '@type'      : ['prov:Entity', EVI_SOFTWARE],
-                'name'       : userMeta.get('softwareName') ?: processor.name,
-                'author'     : userMeta.get('softwareAuthor') ?: author,
-                'description': ensureDescription((userMeta.get('softwareDescription') ?: source?.trim()) as String,
+                'name'       : processor.name,
+                'author'     : author,
+                'description': ensureDescription(source?.trim(),
                     "Nextflow process '${processor.name}' defined in ${scriptUrl}" as String),
-                'format'     : userMeta.get('softwareFormat') ?: 'nextflow',
-                'version'    : userMeta.get('softwareVersion') ?: manifest.version ?: metadata.commitId,
-                'contentUrl' : userMeta.get('softwareUrl') ?: scriptUrl,
+                'format'     : 'nextflow',
+                'version'    : manifest.version ?: metadata.commitId,
+                'contentUrl' : scriptUrl,
                 'isPartOf'   : [ ['@id': workflowArk] ]
             ])
         }
@@ -349,18 +344,6 @@ class FairscapeRenderer implements Renderer {
      */
     static String ensureDescription(String value, String fallback) {
         return value && value.length() >= 10 ? value : fallback
-    }
-
-    /**
-     * Extract the user-supplied software metadata from a process `ext` directive
-     * value (`ext fairscape: [softwareName: ..., ...]`). Returns an empty map when
-     * absent or malformed, so callers can fall back to process-derived defaults.
-     *
-     * @param ext
-     */
-    static Map fairscapeExt(Object ext) {
-        final value = ext instanceof Map ? ext.get('fairscape') : null
-        return value instanceof Map ? value : Collections.emptyMap()
     }
 
     /**
