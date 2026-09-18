@@ -1,0 +1,2 @@
+447430 read1.fq.gz
+490147 read2.fq.gz

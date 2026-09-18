@@ -1,107 +1,246 @@
 # nf-fairscape
 
-Nextflow plugin that renders a [FAIRSCAPE](https://fairscape.github.io/) EVI RO-Crate for each pipeline run. It is a fork of [nf-prov](https://github.com/nextflow-io/nf-prov) that emits the [EVI ontology](https://w3id.org/EVI#) provenance model natively, instead of a Workflow Run RO-Crate.
+## Summary
 
-The emitted `ro-crate-metadata.json` conforms to:
+Nextflow plugin that writes a [FAIRSCAPE](https://fairscape.github.io/) EVI RO-Crate for
+each pipeline run — the [EVI ontology](https://w3id.org/EVI#) provenance model emitted
+natively, rather than converted from another provenance format after the fact.
 
-- [RO-Crate 1.2](https://w3id.org/ro/crate/1.2)
-- [FAIRSCAPE profile 0.1](https://w3id.org/fairscape/profile/0.1)
-- [EVI ontology](https://w3id.org/EVI#) (Evidence Graph vocabulary), with [W3C PROV-O](http://www.w3.org/ns/prov#) typing
-- [schema.org](https://schema.org/) as the base vocabulary
+The crate conforms to [RO-Crate 1.2](https://w3id.org/ro/crate/1.2), the
+[FAIRSCAPE profile 0.1](https://w3id.org/fairscape/profile/0.1) and
+[EVI](https://w3id.org/EVI#), with [PROV-O](http://www.w3.org/ns/prov#) typing over
+[schema.org](https://schema.org/).
 
-Each successful task execution becomes an `EVI:Computation` linked to a parent run-level Computation via `isPartOf`. Files become `EVI:Dataset` entities with bidirectional `generated`/`generatedBy` edges, and the workflow script and Nextflow engine become `EVI:Software`. See [docs/FAIRSCAPE.md](docs/FAIRSCAPE.md) for the full mapping and ARK identifier rules.
+Each successful task becomes an `EVI:Computation` under a run-level Computation. Files
+become `EVI:Dataset` entities with `generated`/`generatedBy` edges; the script, the engine
+and each process become `EVI:Software`. Full mapping: [docs/FAIRSCAPE.md](docs/FAIRSCAPE.md).
 
-## Requirements
+| Plugin version | Minimum Nextflow |
+| -------------- | ---------------- |
+| 0.1.x | 25.10 |
 
-| Version | Minimum Nextflow version |
-| ------- | ------------------------ |
-| 0.1.x   | 25.10 |
+## Get started
 
-## Getting Started
+Requires Nextflow 25.10 or later. Enable the plugin in `nextflow.config` and Nextflow
+fetches it from the [plugin registry](https://registry.nextflow.io) on the first run:
 
-Install the plugin locally (until it is published to the plugin registry):
+```groovy
+plugins { id 'nf-fairscape@0.1.0' }
+```
+
+Until the first registry release lands, build and install it locally instead — same
+result, one extra step ([CONTRIBUTING.md](CONTRIBUTING.md)):
 
 ```bash
 make install
+nextflow run <pipeline> -plugins nf-fairscape@0.1.0
 ```
 
-Then enable it in your Nextflow config:
+A configured run looks like this:
 
 ```groovy
-plugins {
-  id 'nf-fairscape'
-}
+plugins { id 'nf-fairscape@0.1.0' }
 
 outputDir = params.outdir
 
 fairscape {
-  file = "${params.outdir}/ro-crate-metadata.json"
-  overwrite = true
-  author = "Jane Doe"
-  keywords = ['genomics', 'my-project']
-  license = "https://spdx.org/licenses/MIT"
+    file      = "${params.outdir}/ro-crate-metadata.json"
+    overwrite = true
+    author    = 'Jane Doe'
+    keywords  = ['genomics', 'my-project']
+    license   = 'https://spdx.org/licenses/MIT'
 }
 ```
 
-You do not need to modify your pipeline script. When the run completes successfully, the plugin writes the EVI RO-Crate metadata file. The crate directory is the parent directory of `file` — set it inside your workflow `outputDir` so published outputs get crate-relative `contentUrl`s.
+No pipeline changes needed. On success you get:
 
-Every configuration option has a fallback (workflow manifest, then a generated value), so the crate is valid even with no `fairscape` block at all.
+```
+results/
+  ro-crate-metadata.json     # the crate
+  provenance-graph.json      # evidence graph rooted at the crate
+  provenance-graph.html      # interactive, self-contained viewer
+  ro-crate-datasheet.html    # datasheet
+  ai_ready_score.json        # AI-Readiness rubric behind it
+  ro-crate-linkml.yaml       # crate root as a D4D document
+  workflow/                  # the script and configs that produced all of it
+```
 
-For a minimal end-to-end demo, see [examples/reverse-list](examples/reverse-list); for a multi-step provenance chain with saved intermediates, see [examples/letters-chain](examples/letters-chain). New to Groovy/Nextflow plugins? Read [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md) for a guided tour of the codebase.
+Everything has a fallback (manifest, then a generated value), so the crate is valid with no
+`fairscape` block at all.
+
+One thing that is on your pipeline rather than the plugin: **if the crate is going to be
+archived or shared, publish with `mode: 'copy'`.** Nextflow's default publish mode is
+`symlink`, and a symlinked published file gets a crate-relative `contentUrl` like any other —
+the path is right, but the bytes are still in `work/`, so zipping the crate ships dangling
+links. nf-core pipelines already set `publish_dir_mode = 'copy'`. Files the crate describes but
+does not contain (work-directory intermediates) carry
+[`localPath`](docs/FAIRSCAPE.md#where-a-datasets-bytes-are-contenturl-vs-localpath) instead of a
+`contentUrl`, so the graph keeps them without claiming they are retrievable.
+
+## Examples
+
+Every example is a self-contained pipeline plus the config that switches the plugin on.
+Install the plugin, then run one:
+
+```bash
+make install
+cd examples/letters-chain && nextflow run . -plugins nf-fairscape@0.1.0
+```
+
+That writes `results/ro-crate-metadata.json` and the derived artifacts next to it — open
+`results/provenance-graph.html` to see the run's evidence graph.
+
+Runnable demos: [examples/reverse-list](examples/reverse-list) (minimal),
+[examples/letters-chain](examples/letters-chain) (multi-step chain). New to Nextflow
+plugins? [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md).
+
+Against real pipelines: [examples/nf-core](examples/nf-core) runs five released nf-core
+pipelines unmodified and checks the crates they produce — the regression set the plugin is
+hardened against. Because they are unmodified, none of them can carry an `ext fairscape:`
+block; [examples/fastquorum-like](examples/fastquorum-like) and
+[examples/bamtofastq-like](examples/bamtofastq-like) are the other half of that — real
+bioinformatics (fgbio duplex UMI consensus calling, and samtools BAM→FASTQ conversion)
+after [nf-core/fastquorum](https://nf-co.re/fastquorum/2.0.0/docs/usage/) and
+[nf-core/bamtofastq](https://nf-co.re/bamtofastq/2.2.1/docs/usage/), flattened into one
+annotated `main.nf` each, on their own test data. [examples/cycle-repro](examples/cycle-repro) and
+[examples/edge-cases](examples/edge-cases) are the two smallest failures those runs turned up,
+reduced to something that finishes in seconds.
+
+## Adding your own metadata
+
+Nextflow knows what ran. It doesn't know who funded it, what paper it belongs to, or which
+tool is inside a process. Two hooks cover that; every key either accepts is listed in
+[docs/CONFIGURATION.md](docs/CONFIGURATION.md#fairscapemetadata).
+
+**Per run** — `fairscape.metadata` is merged onto the root crate entity. Any field the
+[FAIRSCAPE profile](https://w3id.org/fairscape/profile/0.1) declares works, including the
+[Croissant RAI](http://mlcommons.org/croissant/RAI/1.0) `rai:*` properties (quote keys
+containing a colon — Groovy needs it):
+
+```groovy
+fairscape {
+    author       = 'Jane Roe'
+    organization = 'Example Institute'          // -> publisher
+    license      = 'https://spdx.org/licenses/CC-BY-4.0'
+
+    metadata = [
+        identifier           : 'https://doi.org/10.1234/example',
+        principalInvestigator: 'Jane Roe',
+        funder               : 'NIH Bridge2AI (OT2OD032742)',
+        associatedPublication: 'https://doi.org/10.1234/example-paper',
+        conditionsOfAccess   : 'Non-commercial research use only.',
+        'rai:dataLimitations': 'Not validated for clinical use.'
+    ]
+}
+```
+
+It merges on top of the computed root, so it can also override `name`, `description`,
+`keywords` and the rest — the dedicated options are shortcuts. `@id`, `@type`, `conformsTo`
+and `hasPart` are refused with a `WARN`.
+
+**Per process** — `ext fairscape` describes the tool a process actually runs, replacing the
+defaults on its Software entity:
+
+```nextflow
+process REVERSE {
+    ext fairscape: [
+        softwareName   : 'tac',
+        softwareVersion: '8.32',
+        softwareUrl    : 'https://www.gnu.org/software/coreutils/tac',
+        softwareAuthor : 'Jay Lepreau, David MacKenzie (GNU coreutils)'
+    ]
+    ...
+}
+```
+
+The same map works from config (`process { withName: 'REVERSE' { ext.fairscape = [...] } }`),
+which is how you annotate a pipeline you don't own. Bad keys are ignored with a `WARN`, never
+a failure.
 
 ## Configuration
 
-| Option | Default | Description |
-| ------ | ------- | ----------- |
-| `enabled` | `true` | Create the crate at the end of the run. |
-| `file` | `ro-crate-metadata.json` | Output file; its parent directory is the crate directory. |
-| `overwrite` | `false` | Overwrite an existing metadata file. |
-| `patterns` | `[]` | Glob patterns to filter which published files are included. |
-| `naan` | `59853` | ARK Name Assigning Authority Number used when minting identifiers. |
-| `author` | manifest author → local user | Author recorded on the crate and its entities. |
-| `description` | manifest description → generated | Crate description (min 10 characters). |
-| `keywords` | `['nextflow', 'workflow']` | Crate/dataset keywords. |
-| `license` | manifest license → Apache-2.0 URI | License URL (use an [SPDX](https://spdx.org/licenses/) URI). |
-| `organization` | none | Optional publisher organization name. |
-| `metadata` | `[:]` | Map of extra fields merged into the root crate entity (e.g. `associatedPublication`, `funder`, `principalInvestigator`). See [Annotating tools and metadata](#annotating-tools-and-metadata). |
+Every option, with types, defaults, costs and what each adds to the crate:
+**[docs/CONFIGURATION.md](docs/CONFIGURATION.md)**. The groups:
 
-Note: Nextflow rejects an *empty* `fairscape { }` block ("Unknown config attribute") — either set at least one option or omit the block entirely.
+| Group | Options | Default |
+| ----- | ------- | ------- |
+| Output and file selection | `enabled`, `file`, `overwrite`, `patterns`, `paramInputs` | crate written to `file`, no filtering |
+| Identity and attribution | `author`, `description`, `keywords`, `license`, `organization`, `naan`, `toolVersions`, `metadata` | falls back to the manifest, then a generated value |
+| Derived artifacts | `datasheet`, `evidenceGraph`, `linkInverses`, `linkml`, `published` | **on** — they read the crate, not your data |
+| File description depth | `expandDirectories`, `expandPatterns`, `expandMaxFiles`, `checksums`, `contentSizes` | **off** — each costs I/O |
+| Tabular schemas | `schemas`, `schemaPatterns`, `schemaSampleSize`, `schemaArrayThreshold`, `schemaMaxFiles`, `schemaCommentChar` | **off** (`schemaCommentChar` defaults to `#`) |
+| Container provenance | `containerProvenance`, `containerEngineCommand` | **off** |
 
-## Annotating tools and metadata
+An *empty* `fairscape { }` block is an error ("Unknown config attribute") — set one option or
+omit the block.
 
-Two annotation hooks let you enrich the crate beyond what Nextflow knows automatically:
+`paramInputs` and `toolVersions` are the two on-by-default options that do touch your files —
+one `exists` per file-shaped parameter and one small read per process. They correct metadata
+that is otherwise wrong (a FastQC entity carrying the *pipeline's* version) or missing (the
+samplesheet, which nf-core parses in the workflow body and never stages into a task).
 
-- **Per process** — describe the actual tool a process runs (name, version, author, URL, keywords…) with the `ext fairscape: [...]` directive, in the pipeline or from config.
-- **Per run** — add root-level fields (publication, funder, PI, access terms…) with the `fairscape.metadata` config map.
+The last three groups are opt-in and the crate is identical without them. Each costs extra
+I/O — a directory walk, a full read per file, a parse per table, an `image inspect` — cheap
+locally, expensive against an object store:
 
-Both are documented, with the full list of supported keys and validation behavior, in [docs/FAIRSCAPE.md](docs/FAIRSCAPE.md#describing-the-tool-a-process-runs).
+```groovy
+fairscape {
+    expandDirectories   = true
+    expandPatterns      = ['**/*.tsv', '**/*.csv', '**/*.json']   // omit to describe everything
+    checksums           = true
+    contentSizes        = true
+    schemas             = true
+    containerProvenance = true
+}
+```
 
 ## Identifiers
 
-All entities are minted deterministic [ARK](https://arks.org/) identifiers of the form
-`ark:{naan}/{prefix}-{name-slug}-{sha1-hash[0:7]}`, hashed from stable sources (task hash, normalized file path, session id). Re-running with `-resume` reproduces identical identifiers for unchanged tasks and files. The default NAAN `59853` marks locally-minted, unregistered identifiers; set `naan` to your registered NAAN when publishing to a FAIRSCAPE server.
+Deterministic [ARKs](https://arks.org/): `ark:{naan}/{prefix}-{slug}-{sha1[0:7]}`, hashed
+from stable sources (task hash, normalized file path, session id). `-resume` reproduces the
+same identifiers for unchanged tasks and files. The default NAAN `59853` marks locally
+minted, unregistered identifiers — set `naan` to yours when publishing to a FAIRSCAPE server.
 
 ## Validation
 
-`nf-fairscape-test/validate_crate.py` validates an emitted crate against the
-[`fairscape_models`](https://github.com/fairscape/fairscape-models) pydantic schema and checks referential integrity:
-
 ```bash
-make verify
+make test                        # unit tests (the parity suite skips without fairscape-cli)
+make verify                      # run the test pipeline, validate against fairscape_models
+make parity-test                 # diff every derived artifact against fairscape-cli's
+tools/parity.sh <crate dir>      # the same diff, printed, against any crate directory
 ```
 
-## Differences from nf-prov
+fairscape-cli is the ground truth for everything this plugin ports from it — inverse
+entailment, inputs/outputs, the evidence graph, the LinkML/D4D export, the AI-Ready score, the
+datasheet and tabular schema inference. `make parity-test` re-derives each one from three
+committed crates and compares; the evidence graph, LinkML and score are byte-identical. Two CI
+checks cover the two halves: **Parity vs fairscape-cli** installs the latest CLI from PyPI and
+runs that suite, and **RO-Crate 1.2 validation** runs the pipelines under Nextflow and
+validates the crate they publish against `fairscape_models`.
 
-- Single output format (`fairscape` scope, no `prov.formats` nesting); the BCO/DAG/GEXF/WRROC renderers were removed — use nf-prov itself for those.
-- Files are referenced (via `contentUrl`), never copied into the crate directory.
-- Successful native (`exec:`) tasks are included as Computations; upstream drops them on fresh runs.
-- The observer/renderer framework (`ProvObserver`, `Renderer`, `ProvHelper`) is kept intact from nf-prov to ease rebasing onto upstream.
+See [docs/DATASHEET.md](docs/DATASHEET.md#parity-with-the-cli) for the per-artifact claims and
+the deviations.
+
+## Scope
+
+- One output format: an EVI RO-Crate, configured through a flat `fairscape` config scope.
+  Other provenance serializations — BCO, GEXF, a DAG dump,
+  [Workflow Run RO-Crate](https://www.researchobject.org/workflow-run-crate/) — are out of
+  scope; [nf-prov](https://github.com/nextflow-io/nf-prov) emits those.
+- Files are referenced by `contentUrl` rather than copied into the crate. The exception is
+  the workflow itself, which `includeWorkflow` copies so the crate can still say what ran
+  after it is zipped and moved.
+- Successful native (`exec:`) tasks are described like any other task.
 
 ## Limitations
 
-- Only file (`path`) channel values become Datasets; scalar (`val`) inputs are visible only through the task `command` and run-level `parameter` list (same limitation as nf-prov).
-- EVI models a single timestamp (`dateCreated`) and successful runs only; per-task start/end times and container images are carried as extra keys (`startTime`, `endTime`, `containerImage`), which the FAIRSCAPE schema accepts but does not define.
+- Only `path` values become Datasets; `val` inputs appear only in the task `command` and the
+  run `parameter` list.
+- EVI has one timestamp (`dateCreated`) and no failure model. Per-task times and container
+  images ride along as extra keys the FAIRSCAPE schema accepts but doesn't define.
 
 ## License
 
-Apache-2.0, same as nf-prov. This is a modified fork of [nextflow-io/nf-prov](https://github.com/nextflow-io/nf-prov) v1.7.0.
+Apache-2.0 — full text in [LICENSE](LICENSE). Parts of the plugin framework derive from
+[nf-prov](https://github.com/nextflow-io/nf-prov), also Apache-2.0; [NOTICE](NOTICE)
+records what and from where.
