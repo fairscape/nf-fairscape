@@ -7,7 +7,7 @@ render or produce a dangling reference.
 ```bash
 make install                                  # from the repo root, once
 cd examples/edge-cases
-nextflow run . -plugins nf-fairscape@0.1.0
+nextflow run . -plugins nf-fairscape@0.2.0
 
 PYTHONPATH=../../../../fairscape_models python3 ../../nf-fairscape-test/validate_crate.py \
     results/ro-crate-metadata.json

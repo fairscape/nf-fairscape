@@ -51,8 +51,8 @@ SECMS_TO_EDGELIST → PPI_EMBEDDING  ┘
 ## Prerequisites
 
 - **Nextflow ≥ 25.10** (`~/.local/bin/nextflow`, currently 25.10.4).
-- **nf-fairscape plugin** installed at `~/.nextflow/plugins/nf-fairscape-0.1.0`
-  (`make install` in the plugin repo). The config pins `nf-fairscape@0.1.0` so it resolves offline.
+- **nf-fairscape plugin** installed at `~/.nextflow/plugins/nf-fairscape-0.2.0`
+  (`make install` in the plugin repo). The config pins `nf-fairscape@0.2.0` so it resolves offline.
 - A Python env where the `cellmaps_*` packages and ML deps (pandas, sklearn, torch, …) import.
   Per project convention that is the `subcell` conda env — `params.python` defaults to
   `conda run -n subcell python`. Override with `--python "${params.base_dir}/.venv/bin/python"`

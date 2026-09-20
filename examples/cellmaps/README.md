@@ -183,7 +183,7 @@ nextflow run main.nf -resume \
 - IMAGE_DOWNLOAD is the slow step: it registers each of ~1,900 image files into its
   RO-Crate via a separate `fairscape-cli` subprocess (~10–15 min), same cost on a
   real run.
-- Requires Nextflow ≥ 25.10 and the locally-installed `nf-fairscape@0.1.0` plugin.
+- Requires Nextflow ≥ 25.10 and the locally-installed `nf-fairscape@0.2.0` plugin.
 
 ### Validated result (full run, real data)
 

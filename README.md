@@ -25,7 +25,7 @@ Requires Nextflow 25.10 or later. Enable the plugin in `nextflow.config` and Nex
 fetches it from the [plugin registry](https://registry.nextflow.io) on the first run:
 
 ```groovy
-plugins { id 'nf-fairscape@0.1.0' }
+plugins { id 'nf-fairscape@0.2.0' }
 ```
 
 Until the first registry release lands, build and install it locally instead — same
@@ -33,13 +33,13 @@ result, one extra step ([CONTRIBUTING.md](CONTRIBUTING.md)):
 
 ```bash
 make install
-nextflow run <pipeline> -plugins nf-fairscape@0.1.0
+nextflow run <pipeline> -plugins nf-fairscape@0.2.0
 ```
 
 A configured run looks like this:
 
 ```groovy
-plugins { id 'nf-fairscape@0.1.0' }
+plugins { id 'nf-fairscape@0.2.0' }
 
 outputDir = params.outdir
 
@@ -84,7 +84,7 @@ Install the plugin, then run one:
 
 ```bash
 make install
-cd examples/letters-chain && nextflow run . -plugins nf-fairscape@0.1.0
+cd examples/letters-chain && nextflow run . -plugins nf-fairscape@0.2.0
 ```
 
 That writes `results/ro-crate-metadata.json` and the derived artifacts next to it — open

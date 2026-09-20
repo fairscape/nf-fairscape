@@ -6,7 +6,7 @@ The crate lands next to the output.
 ```bash
 make install                                  # from the repo root, once
 cd examples/reverse-list
-nextflow run . -plugins nf-fairscape@0.1.0
+nextflow run . -plugins nf-fairscape@0.2.0
 
 cat results/reversed.txt
 python3 -m json.tool results/ro-crate-metadata.json | less

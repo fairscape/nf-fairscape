@@ -19,7 +19,7 @@ no VPN: https://ood.hpc.virginia.edu). Then in a shell:
 cd /project/clarklab/nf/cellmap
 tar -xzf cellmaps-rivanna.tar.gz
 mkdir -p ~/.nextflow/plugins
-mv plugins/nf-fairscape-0.1.0 ~/.nextflow/plugins/
+mv plugins/nf-fairscape-0.2.0 ~/.nextflow/plugins/
 ```
 
 ## 2. Build the env

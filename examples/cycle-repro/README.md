@@ -6,7 +6,7 @@ fixed: a provenance graph that is not a DAG.
 ```bash
 make install                                  # from the repo root, once
 cd examples/cycle-repro
-nextflow run . -plugins nf-fairscape@0.1.0
+nextflow run . -plugins nf-fairscape@0.2.0
 
 ls results/provenance-graph.json              # this file is the whole point
 ```

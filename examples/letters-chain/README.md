@@ -19,8 +19,8 @@ Each Computation also has `isPartOf` → the run Computation, each Dataset the i
 `generatedBy`.
 
 ```bash
-nextflow run . -plugins nf-fairscape@0.1.0            # 8 letters
-nextflow run . -plugins nf-fairscape@0.1.0 --n 12     # or pick a length
+nextflow run . -plugins nf-fairscape@0.2.0            # 8 letters
+nextflow run . -plugins nf-fairscape@0.2.0 --n 12     # or pick a length
 
 python3 -m json.tool results/ro-crate-metadata.json | less
 ```
