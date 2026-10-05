@@ -47,3 +47,8 @@ ai_ready_score.json
 CLAUDE.md
 CHANGELOG.md
 docs/PUBLISHING.md
+
+# annotator working files (tools/annotate.sh): inventory, fetched remote modules, evidence
+# report. The rendered fairscape-annotations.config next to them is the deliverable and is
+# meant to be committed.
+.fairscape-annotate/

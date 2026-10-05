@@ -157,6 +157,16 @@ The same map works from config (`process { withName: 'REVERSE' { ext.fairscape =
 which is how you annotate a pipeline you don't own. Bad keys are ignored with a `WARN`, never
 a failure.
 
+### Or let the annotator write them
+
+Both hooks can be filled in by an agent instead of by hand. `tools/annotate.sh <workflow>`
+inventories the processes, sends one scout per tool to find what it is and which version is
+actually installed where the pipeline runs, sends one scout to write the RAI, ethics and
+compute statements, and renders a `fairscape-annotations.config` to layer on with `-c` --
+with a `// REVIEW:` comment wherever only a human knows the answer (the PI, the funder, the
+DOI). It runs as a Claude Code skill (`/fairscape-annotate`), read-only against your
+software. Details, arguments and what it will not do: [docs/ANNOTATOR.md](docs/ANNOTATOR.md).
+
 ## Configuration
 
 Every option, with types, defaults, costs and what each adds to the crate:
